@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+import subprocess
+import sys
+import os
+import fcntl
+import time
+import md5
+
+class FileCache(object):
+    def __init__(self):
+        self.expire   = int(sys.argv[1])
+        self.command  = sys.argv[2:]
+        self.cachefile = self.__cachefile()
+
+    def __cachefile(self):
+        m = md5.new()
+        for s in self.command:
+            m.update(s)
+        return "/tmp/fcache-" + m.hexdigest()
+
+    def run(self):
+        print self.expire
+        print self.cachefile
+        fd = self.__cache_fd()
+        line = os.read(fd, 1)
+        content = ""
+        while line != "":
+            content += line
+            line = os.read(fd, 1)
+        os.close(fd)
+        print content
+
+    def __cache_fd(self):
+        fd = os.open(self.cachefile, os.O_RDWR|os.O_CREAT|os.O_SHLOCK)
+        mtime = os.path.getmtime(self.cachefile)
+        size  = os.path.getsize(self.cachefile)
+        if size == 0 or mtime < time.time() - self.expire:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            self.__write_file(fd)
+            os.close(fd)
+            fd = os.open(self.cachefile, os.O_RDWR|os.O_CREAT|os.O_SHLOCK)
+        return fd
+
+    def __write_file(self, fd):
+        os.lseek(fd, 0, os.SEEK_SET)
+        p = subprocess.Popen(self.command, universal_newlines=True, stdout=fd)
+        p.wait()
+        os.fsync(fd)
+ 
+if __name__ == "__main__":
+    fcache = FileCache()
+    fcache.run()
