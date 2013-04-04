@@ -19,14 +19,12 @@ class FileCache(object):
         return "/tmp/fcache-" + m.hexdigest()
 
     def run(self):
-        print self.expire
-        print self.cachefile
         fd = self.__cache_fd()
-        line = os.read(fd, 1)
+        line = os.read(fd, 64)
         content = ""
         while line != "":
             content += line
-            line = os.read(fd, 1)
+            line = os.read(fd, 64)
         os.close(fd)
         print content
 
