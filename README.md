@@ -1,8 +1,13 @@
 # fcache
 
 ## Usage
+    $ fcache EXPIRE COMMAND
+        EXPIRE  :  expire sec
+        COMMAND :  any command line
 
-    $ time ./fcache 3 perl -e 'sleep 1; print time' & time ./fcache 3 perl -e 'sleep 1; print time' & time ./fcache 3 perl -e 'sleep 1; print time'
+## Example
+
+    $ time fcache 3 perl -e 'sleep 1; print time' & time fcache 3 perl -e 'sleep 1; print time' & time fcache 3 perl -e 'sleep 1; print time'
     [1] 61067
     [2] 61068
     1365052148
