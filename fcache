@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import subprocess
 import sys
 import os
@@ -8,9 +9,31 @@ import md5
 
 class FileCache(object):
     def __init__(self):
+        if len(sys.argv) < 3:
+            self.__usage()
         self.expire   = int(sys.argv[1])
         self.command  = sys.argv[2:]
         self.cachefile = self.__cachefile()
+        self.readsize = 64
+
+    def run(self):
+        try:
+            self.__run()
+        except OSError as e:
+            print(self.__error_msg("Execution error " + str(e)), file=sys.stderr)
+            sys.exit(1)
+        except SystemExit as e:
+            print(self.__error_msg("Exit code is not 0, no cached."), file=sys.stderr)
+            sys.exit(e)
+        finally:
+            os.close(self.fd)
+
+    def __usage(self):
+        print("Usage: fcache EXPIRE_SEC COMMAND [ARGS]", file=sys.stderr)
+        sys.exit(1)
+
+    def __error_msg(self, msg):
+        return "fcache error: " + msg
 
     def __cachefile(self):
         m = md5.new()
@@ -18,32 +41,34 @@ class FileCache(object):
             m.update(s)
         return "/tmp/fcache-" + m.hexdigest()
 
-    def run(self):
-        fd = self.__cache_fd()
-        line = os.read(fd, 64)
+    def __run(self):
+        self.__create_fd()
+        line = os.read(self.fd, self.readsize)
         content = ""
         while line != "":
             content += line
-            line = os.read(fd, 64)
-        os.close(fd)
-        print content
+            line = os.read(self.fd, self.readsize)
+        print(content, end="")
 
-    def __cache_fd(self):
-        fd = os.open(self.cachefile, os.O_RDWR|os.O_CREAT|os.O_SHLOCK)
+    def __create_fd(self):
+        self.fd = os.open(self.cachefile, os.O_RDWR|os.O_CREAT|os.O_SHLOCK)
         mtime = os.path.getmtime(self.cachefile)
         size  = os.path.getsize(self.cachefile)
         if size == 0 or mtime < time.time() - self.expire:
-            fcntl.flock(fd, fcntl.LOCK_EX)
-            self.__write_file(fd)
-            os.close(fd)
-            fd = os.open(self.cachefile, os.O_RDWR|os.O_CREAT|os.O_SHLOCK)
-        return fd
+            fcntl.flock(self.fd, fcntl.LOCK_EX)
+            self.__write_file()
+            os.close(self.fd)
+            self.fd = os.open(self.cachefile, os.O_RDWR|os.O_CREAT|os.O_SHLOCK)
 
-    def __write_file(self, fd):
-        os.lseek(fd, 0, os.SEEK_SET)
-        p = subprocess.Popen(self.command, universal_newlines=True, stdout=fd)
-        p.wait()
-        os.fsync(fd)
+    def __write_file(self):
+        os.lseek(self.fd, 0, os.SEEK_SET)
+        p = subprocess.Popen(self.command, universal_newlines=True, stdout=subprocess.PIPE)
+        stdout = p.communicate()[0]
+        if p.returncode != 0:
+            sys.exit(p.returncode)
+        else:
+            os.write(self.fd, stdout)
+            os.fsync(self.fd)
  
 if __name__ == "__main__":
     fcache = FileCache()
