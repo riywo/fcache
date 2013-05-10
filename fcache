@@ -67,7 +67,8 @@ class FileCache(object):
         if p.returncode != 0:
             sys.exit(p.returncode)
         else:
-            os.write(self.fd, stdout)
+            size = os.write(self.fd, stdout)
+            os.ftruncate(self.fd, size)
             os.fsync(self.fd)
  
 if __name__ == "__main__":
