@@ -13,9 +13,9 @@
     perl -e 'sleep 1; print "$$\n"' &
     time wait
     
-    ./fcache 3 perl -e 'sleep 1; print "$$"' &
-    ./fcache 3 perl -e 'sleep 1; print "$$"' &
-    ./fcache 3 perl -e 'sleep 1; print "$$"' &
+    ./fcache 3 perl -e 'sleep 1; print "$$\n"' &
+    ./fcache 3 perl -e 'sleep 1; print "$$\n"' &
+    ./fcache 3 perl -e 'sleep 1; print "$$\n"' &
     time wait
 
     $ ./example.sh
