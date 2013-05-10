@@ -1,23 +1,13 @@
 # fcache
 
 ## Usage
-    $ fcache EXPIRE COMMAND
-        EXPIRE  :  expire sec
-        COMMAND :  any command line
+    Usage: fcache EXPIRE_SEC COMMAND [ARGS]
+        EXPIRE_SEC :  expire sec
+        COMMAND    :  any command
+        ARGS       :  command line arguments
 
 ## Example
-    $ cat example.sh
-    #!/bin/bash
-    perl -e 'sleep 1; print "$$\n"' &
-    perl -e 'sleep 1; print "$$\n"' &
-    perl -e 'sleep 1; print "$$\n"' &
-    time wait
-    
-    ./fcache 3 perl -e 'sleep 1; print "$$\n"' &
-    ./fcache 3 perl -e 'sleep 1; print "$$\n"' &
-    ./fcache 3 perl -e 'sleep 1; print "$$\n"' &
-    time wait
-
+    $ cd example
     $ ./example.sh
     63742
     63741
